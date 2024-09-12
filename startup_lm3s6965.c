@@ -15,6 +15,13 @@ extern uint32_t _sram_stacktop;
 extern void main(void);
 extern void uart0_print(const char *msg);
 
+#define HALT_IF_DEBUGGING()                              \
+  do {                                                   \
+    if ((*(volatile uint32_t *)0xE000EDF0) & (1 << 0)) { \
+      __asm("bkpt 1");                                   \
+    }                                                    \
+  } while (0)
+
 typedef struct __attribute__((packed)) {
   uint32_t r0;
   uint32_t r1;
@@ -74,12 +81,65 @@ __attribute__((section(".vectors"), used)) void (*const _exceptions[CORTEX_M3_EX
 
 void blorp(void) {
   printf("we blorpin'\n");
-  while (1);
+  while (1)
+    ;
+}
+
+extern volatile uint32_t *stack_topish;
+
+__attribute__((always_inline)) static inline uint32_t get_fp(void) {
+  register uint32_t result;
+
+  __asm volatile("MOV %0, r7\n" : "=r"(result));
+  return result;
+}
+
+void print_unwind(const ExceptionFrame *frame, uint32_t *fp) {
+  printf("pc 0x%p\n", frame->pc);
+  //printf("fp 0x%p\n", fp);
+  //printf("f  0x%p\n", frame);
+
+  uint32_t *saved_fp = (uint32_t *)((((uint32_t)&frame[1])+7)&~7);
+  saved_fp = (uint32_t *)*saved_fp;
+  printf("pc 0x%p\n", saved_fp[-2]);
+
+
+  saved_fp = (uint32_t *)saved_fp[-1];
+  printf("pc 0x%p\n", saved_fp[-2]);
+
+  printf("next 0x%p\n", (((uint32_t)&frame[1])+7)&~7);
+
+  uint32_t *addr = (void *)frame;
+  while (addr < stack_topish) {
+    printf("0x%p: 0x%p (%u)\n", addr, *addr, *addr);
+    addr++;
+  }
+
+  //  printf("frame addr 0x%p\n", frame);
+  //  uint32_t *sp = (uint32_t *)((uint32_t)frame + sizeof(ExceptionFrame));
+  //  printf("frame next 0x%p\n", sp);
+  //  printf("frame next deref 0x%p\n", *sp);
+  //  printf("frame next deref 0x%p\n", sp[1]);
+  //  printf("frame next deref 0x%p\n", sp[2]);
+  //
+  //  ExceptionFrame *frame2 = (ExceptionFrame *)sp[1];
+  //  printf("next pc 0x%p\n", frame2->pc);
+  //
+  //  printf("lr: %p, r12: %p, r3: %p, r2: %p, r1: %p, r0: %p\n", frame->lr, frame->r12, frame->r3, frame->r2,
+  //  frame->r1, frame->r0);
+  //  //frame = frame->sp;
+  // while ((uint32_t)frame < _sram_stacktop) {
+  //
+  //}
 }
 
 __attribute__((section(".startup"))) void __Hard_Fault_Handler(ExceptionFrame *frame, uint32_t reason) {
-  printf("got hard fault! (%d) pc %p / %x\n", 7, frame->pc, reason);
+  uint32_t *fp = (void *)get_fp();
+  print_unwind(frame, fp);
 
+  uint32_t fault_id = frame->xpsr & 15;
+
+  printf("got hard fault! (%d) pc %p / %x\n", 7, frame->pc, fault_id);
 
   volatile uint32_t *cfsr = (volatile uint32_t *)0xE000ED28;
   const uint32_t usage_fault_mask = 0xffff0000;
@@ -90,10 +150,13 @@ __attribute__((section(".startup"))) void __Hard_Fault_Handler(ExceptionFrame *f
 
   if (faulted_from_exception || non_usage_fault_occurred) {
     printf("we're going to reboot!\n");
+    while (1)
+      ;
     // For any fault within an ISR or non-usage faults let's reboot the system
     volatile uint32_t *aircr = (volatile uint32_t *)0xE000ED0C;
     *aircr = (0x05FA << 16) | 0x1 << 2;
-    while (1) { } // should be unreachable
+    while (1) {
+    }  // should be unreachable
   }
 
   // If it's just a usage fault, let's "recover"

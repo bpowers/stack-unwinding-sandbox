@@ -1,5 +1,7 @@
 #include <stdint.h>
 
+#include "printf.h"
+
 /* We'll be using the serial interface to print on the console (qemu)
  * For this, we write to the UART.
  * Refer: http://www.ti.com/lit/ds/symlink/lm3s6965.pdf Table 2-8
@@ -26,7 +28,14 @@ void a(void) {
   b();
 }
 
+volatile uint32_t *stack_topish;
+
 void main(void) {
+  volatile int n = 0;
+  stack_topish = &n;
+
+  printf("addr of n %p\n", &n);
+
   a();
 
   const char *start_msg = "Hello, World\n";
