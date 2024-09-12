@@ -96,18 +96,17 @@ __attribute__((always_inline)) static inline uint32_t get_fp(void) {
 
 void print_unwind(const ExceptionFrame *frame, uint32_t *fp) {
   printf("pc 0x%p\n", frame->pc);
-  //printf("fp 0x%p\n", fp);
-  //printf("f  0x%p\n", frame);
+  // printf("fp 0x%p\n", fp);
+  // printf("f  0x%p\n", frame);
 
-  uint32_t *saved_fp = (uint32_t *)((((uint32_t)&frame[1])+7)&~7);
+  uint32_t *saved_fp = (uint32_t *)((((uint32_t)&frame[1]) + 7) & ~7);
   saved_fp = (uint32_t *)*saved_fp;
   printf("pc 0x%p\n", saved_fp[-2]);
-
 
   saved_fp = (uint32_t *)saved_fp[-1];
   printf("pc 0x%p\n", saved_fp[-2]);
 
-  printf("next 0x%p\n", (((uint32_t)&frame[1])+7)&~7);
+  printf("next 0x%p\n", (((uint32_t)&frame[1]) + 7) & ~7);
 
   uint32_t *addr = (void *)frame;
   while (addr < stack_topish) {
