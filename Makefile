@@ -1,7 +1,10 @@
 
 CC = arm-none-eabi-gcc
+AS = arm-none-eabi-as
 CFLAGS = -g -mcpu=cortex-m3 -mthumb -fno-omit-frame-pointer -mtpcs-frame -mtpcs-leaf-frame -mapcs-frame \
   -DPRINTF_DISABLE_SUPPORT_FLOAT=1 -DPRINTF_DISABLE_SUPPORT_LONG_LONG=1
+
+ASFLAGS = -g -mthumb -mcpu=cortex-m3
 
 CONFIG = Makefile
 
@@ -13,7 +16,7 @@ MAKEFLAGS += -s
 endif
 
 .SUFFIXES:
-.SUFFIXES: .c .o .test
+.SUFFIXES: .c .o .s .test
 
 all: system.bin
 
@@ -21,8 +24,11 @@ all: system.bin
 	@echo "  CC    $@"
 	$(CC) $(CFLAGS) -MMD -o $@ -c $<
 
+.s.o: $(CONFIG)
+	@echo "  AS    $@"
+	$(AS) $(ASFLAGS) -o $@ -c $<
 
-startup_lm3s6965.elf: startup_lm3s6965.o main.o printf.o
+startup_lm3s6965.elf: startup_lm3s6965.o main.o printf.o fault_handler.o
 	arm-none-eabi-ld -T lm3s6965_layout.ld -o $@ $^
 
 system.bin: startup_lm3s6965.elf

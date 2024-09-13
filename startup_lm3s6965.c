@@ -171,18 +171,6 @@ __attribute__((section(".startup"))) void __Hard_Fault_Handler(ExceptionFrame *f
   frame->xpsr = (1 << 24);
 }
 
-#define HARDFAULT_HANDLING_ASM(_x) \
-  __asm volatile(                  \
-      "tst lr, #4 \n"              \
-      "ite eq \n"                  \
-      "mrseq r0, msp \n"           \
-      "mrsne r0, psp \n"           \
-      "b __Hard_Fault_Handler \n")
-
-__attribute__((section(".startup"))) void _Hard_Fault_Handler(void) {
-  HARDFAULT_HANDLING_ASM();
-}
-
 __attribute__((section(".startup"))) void _Bus_Fault_Handler() {
   uart0_print("got bus fault\n");
   while (1)
