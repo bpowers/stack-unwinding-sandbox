@@ -12,21 +12,9 @@
 
 volatile uint8_t *lm3s6965_uart0 = (uint8_t *)0x4000C000;
 
-volatile uint8_t storage = 0;
-
 void uart0_print(const char *msg);
 
-void c(void) {
-  typedef void (*fn_t)();
-  fn_t foo = (fn_t)(0x8004000);
-  foo();
-}
-void b(void) {
-  c();
-}
-void a(void) {
-  b();
-}
+void a(void);
 
 volatile uint32_t *stack_topish;
 

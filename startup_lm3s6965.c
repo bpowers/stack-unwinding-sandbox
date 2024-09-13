@@ -94,12 +94,13 @@ __attribute__((always_inline)) static inline uint32_t get_fp(void) {
   return result;
 }
 
-void print_unwind(const ExceptionFrame *frame, uint32_t *fp) {
+void print_unwind(const ExceptionFrame *frame) {
   printf("pc 0x%p\n", frame->pc);
-  // printf("fp 0x%p\n", fp);
-  // printf("f  0x%p\n", frame);
+  printf("f  0x%p\n", frame);
 
   uint32_t *saved_fp = (uint32_t *)((((uint32_t)&frame[1]) + 7) & ~7);
+  printf("sf 0x%p\n", saved_fp);
+
   saved_fp = (uint32_t *)*saved_fp;
   printf("pc 0x%p\n", saved_fp[-2]);
 
@@ -132,9 +133,8 @@ void print_unwind(const ExceptionFrame *frame, uint32_t *fp) {
   //}
 }
 
-__attribute__((section(".startup"))) void __Hard_Fault_Handler(ExceptionFrame *frame, uint32_t reason) {
-  uint32_t *fp = (void *)get_fp();
-  print_unwind(frame, fp);
+__attribute__((section(".startup"))) void __Hard_Fault_Handler(ExceptionFrame *frame) {
+  print_unwind(frame);
 
   uint32_t fault_id = frame->xpsr & 15;
 
